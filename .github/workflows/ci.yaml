@@ -15,8 +15,15 @@ jobs:
         with:
           go-version: '^1.16'
 
-      - name: lint, test, build
+      - name: lint, test
         run: |
           make lint
           make test
+
+      - name: check build
+        run: |
           make build
+          ./md5http -parallel 2 \
+            https://google.com \
+            https://yandex.ru \
+            https://bing.co.uk

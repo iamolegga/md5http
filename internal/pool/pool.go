@@ -13,35 +13,46 @@ type Pool struct {
 	errCh chan error
 	//wg is used to wait until all jobs are done and all workers are stopped listening
 	wg *sync.WaitGroup
+	//count of workers
+	parallel uint
+	//handler that will do job, will be passed to each worker
+	handler Handler
 }
 
-func New(ctx context.Context, parallel uint, handler Handler) *Pool {
-	pool := &Pool{
-		ch:    make(chan string),
-		errCh: make(chan error),
-		wg:    &sync.WaitGroup{},
+func New(parallel uint, handler Handler) *Pool {
+	return &Pool{
+		ch:       make(chan string),
+		errCh:    make(chan error),
+		wg:       &sync.WaitGroup{},
+		parallel: parallel,
+		handler:  handler,
 	}
+}
 
-	for i := uint(0); i < parallel; i++ {
-		pool.wg.Add(1)
+func (p *Pool) Handle(ctx context.Context, urls ...string) error {
+	p.startWorkers(ctx)
+	return p.process(urls)
+}
+
+func (p *Pool) startWorkers(ctx context.Context) {
+	for i := uint(0); i < p.parallel; i++ {
+		p.wg.Add(1)
 		go func() {
-			defer pool.wg.Done()
+			defer p.wg.Done()
 
 			w := &worker{
-				Handler: handler,
-				ch:      pool.ch,
+				Handler: p.handler,
+				ch:      p.ch,
 			}
 
 			if err := w.listen(ctx); err != nil {
-				pool.errCh <- err
+				p.errCh <- err
 			}
 		}()
 	}
-
-	return pool
 }
 
-func (p *Pool) Handle(urls ...string) error {
+func (p *Pool) process(urls []string) error {
 	go func() {
 		for _, url := range urls {
 			p.ch <- url

@@ -1,6 +1,6 @@
 .PHONY: build
 build:
-	go build ./cmd/md5http/main.go
+	go build -o=./md5http ./cmd/md5http/main.go
 
 .PHONY: lint
 lint:
