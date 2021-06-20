@@ -30,9 +30,9 @@ func main() {
 		os.Stdout,
 	)
 
-	p := pool.New(ctx, cfg.Parallel, h)
+	p := pool.New(cfg.Parallel, h)
 
-	switch err := p.Handle(cfg.Inputs...); err {
+	switch err := p.Handle(ctx, cfg.Inputs...); err {
 	case nil:
 		return
 	case context.Canceled:

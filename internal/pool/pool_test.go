@@ -18,8 +18,8 @@ func TestPool_HandlePositive(t *testing.T) {
 	url := "https://google.com"
 	h.EXPECT().Handle(url).Return(nil).Times(1)
 
-	p := pool.New(context.Background(), 1, h)
-	if err := p.Handle(url); err != nil {
+	p := pool.New(1, h)
+	if err := p.Handle(context.Background(), url); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
@@ -32,8 +32,8 @@ func TestPool_HandleNegative(t *testing.T) {
 	errHandling := errors.New("handling error")
 	h.EXPECT().Handle(url).Return(errHandling).Times(1)
 
-	p := pool.New(context.Background(), 1, h)
-	if err := p.Handle(url); !errors.Is(err, errHandling) {
+	p := pool.New(1, h)
+	if err := p.Handle(context.Background(), url); !errors.Is(err, errHandling) {
 		t.Errorf("error want: %v, got: %v", errHandling, err)
 	}
 }
@@ -49,10 +49,10 @@ func TestPool_HandleParallelPositive(t *testing.T) {
 		return nil
 	}).Times(3)
 
-	p := pool.New(context.Background(), uint(len(urls)), h)
+	p := pool.New(uint(len(urls)), h)
 
 	start := time.Now()
-	if err := p.Handle(urls...); err != nil {
+	if err := p.Handle(context.Background(), urls...); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 	elapsedSec := time.Since(start).Seconds()
@@ -98,10 +98,10 @@ func TestPool_HandleParallelNegative(t *testing.T) {
 		return nil
 	}).Times(6)
 
-	p := pool.New(context.Background(), 2, h)
+	p := pool.New(2, h)
 
 	start := time.Now()
-	if err := p.Handle(urls...); !errors.Is(err, errHandling) {
+	if err := p.Handle(context.Background(), urls...); !errors.Is(err, errHandling) {
 		t.Errorf("unexpected error: %v", err)
 	}
 	elapsedSec := time.Since(start).Seconds()
